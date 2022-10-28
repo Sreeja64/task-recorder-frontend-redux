@@ -2,39 +2,34 @@ import { useEffect, useState } from 'react';
 import Header from './components/Header';
 import Tasks from './components/Tasks';
 import AddTask from './components/AddTask';
+import { addTasks, fetchTasks, deleteTasks, toggleStatus, fetchActiveTasks } from './redux/taskSlice';
+import { useSelector, useDispatch } from 'react-redux';
 
 const App = () => {
-  //{name:"Dancing",staus:"true"},{name:"Coding",status:"false"}
-  const [tasks, setTasks] = useState([])
+
   const [btnContent, setBtnContent] = useState('Completed Tasks')
   const [subHeading, setSubheading] = useState('All Tasks')
   const [showAddTaskForm, setShowAddTaskForm] = useState(false)
-  useEffect(() => {
-    const getTasks = async () => {
-      const tasks = await fetchTasks()
-      setTasks(tasks)
-      //await showAllTasks()
-    }
-    getTasks()
-  }, [])
 
-  const fetchTasks = async () => {
-    try {
-      const res = await fetch('http://localhost:3030/fetchAllTasks', { method: 'GET' })
-      const data = await res.json()
-      //console.log(data);
-      return data
+  const tasks = useSelector((state) => state.tasks);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+		dispatch(fetchTasks());
+	}, [dispatch]);
+
+  const addTask = (task)=>{
+    try{
+      dispatch(addTasks({name:task.name,status:task.status}))
     }
-    catch (e) {
+    catch(e){
       console.log(e);
     }
-  }
+  };
 
-  const toggleStatus = async (id) => {
+  const toggleStat = (id) => {
     try {
-      await fetch(`http://localhost:3030/toggleStatus/${id}`, { method: 'PUT' })
-      const tasks = await fetchTasks()
-      setTasks(tasks)
+      dispatch(toggleStatus(id))
     }
     catch (e) {
       console.log(e);
@@ -43,9 +38,7 @@ const App = () => {
 
   const showActiveTasks = async () => {
     try {
-      const res = await fetch('http://localhost:3030/fetchActiveTasks', { method: 'GET' })
-      const data = await res.json()
-      setTasks(data)
+      dispatch(fetchActiveTasks())
       setBtnContent('All Tasks')
       setSubheading('Completed Tasks')
     }
@@ -55,15 +48,19 @@ const App = () => {
   }
 
   const showAllTasks = async () => {
-    const tasks = await fetchTasks()
-    setTasks(tasks)
-    setBtnContent('Completed Tasks')
-    setSubheading('All Tasks')
+    try{
+      dispatch(fetchTasks());
+      setBtnContent('Completed Tasks')
+      setSubheading('All Tasks')
+    }
+   catch(e){
+    console.log(e);
+   }
   }
 
-  const deleteTasks = async (id) => {
+  const deleteTask = async (id) => {
     try {
-      await fetch(`http://localhost:3030/deleteTask/${id}`, { method: 'DELETE' })
+      dispatch(deleteTasks(id))
       if (subHeading === 'All Tasks') {
         await showAllTasks();
       }
@@ -81,28 +78,14 @@ const App = () => {
     setShowAddTaskForm(!showAddTaskForm)
   }
 
-  const addTask = async (task) => {
-    try {
-      await fetch('http://localhost:3030/addTask', {
-        method: 'POST', headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(task)
-      })
-      await showAllTasks();
-    }
-    catch (e) {
-      console.log(e);
-    }
-
-  }
-
   return (
+
     <div className="container">
       <Header onclick={showAddTask} showTasks={btnContent === 'Completed Tasks' ? showActiveTasks : showAllTasks} btnContent={btnContent} addFormBtnContent={showAddTaskForm}/>
-      {showAddTaskForm ? <AddTask onAdd={addTask} /> : <p></p>}
-      <Tasks subHeading={subHeading} tasks={tasks} toggleStatus={toggleStatus} deleteTasks={deleteTasks} />
+        {showAddTaskForm ? <AddTask onAdd={addTask} /> : <p></p>}
+        <Tasks subHeading={subHeading} tasks={tasks} toggleStatus={toggleStat} deleteTasks={deleteTask} />
     </div>
+
   );
 }
 
